@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>HRA ASCT+B CSV Re-Exporter</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tabulator-tables/dist/css/tabulator.min.css"
+      rel="stylesheet"
+    />
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/npm/tabulator-tables/dist/js/tabulator.min.js"
+    ></script>
+
+    <script>
+      function normalizeCsvUrl(url) {
+        if (
+          url.startsWith("https://docs.google.com/spreadsheets/d/") &&
+          url.indexOf("export?format=csv") === -1
+        ) {
+          const splitUrl = url.split("/");
+          if (splitUrl.length === 7) {
+            const sheetId = splitUrl[5];
+            const gid = splitUrl[6].split("=")[1];
+            return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+          }
+        }
+        return url;
+      }
+
+      function getSheet(csvUrl) {
+        const url = `https://mmpyikxkcp.us-east-2.awsapprunner.com/v2/csv?csvUrl=${encodeURIComponent(
+          csvUrl
+        )}&cache=false`;
+        return fetch(url).then((r) => r.json());
+      }
+
+      function reformatSheet(sheetData) {
+        const results = [];
+        for (const row of sheetData.data) {
+          const asLength = row.anatomical_structures.length;
+          const terminalAs = row.anatomical_structures[asLength - 1];
+          const as_ = {
+            as_name: terminalAs.name,
+            as_label: terminalAs.rdfs_label,
+            as_id: terminalAs.id,
+            as_column: `AS/${asLength}`,
+          };
+
+          const ctLength = row.cell_types.length;
+          const terminalCt = row.cell_types[ctLength - 1];
+          const ct = {
+            ct_name: terminalCt.name,
+            ct_label: terminalCt.rdfs_label,
+            ct_id: terminalCt.id,
+            ct_column: `CT/${ctLength}`,
+          };
+
+          const genes = row.biomarkers_gene
+            .concat(row.biomarkers_protein)
+            .map((bm, i) => ({
+              gene_name: bm.name,
+              gene_label: bm.rdfs_label,
+              gene_id: bm.id,
+              gene_column: `B${bm.b_type[0].toUpperCase()}/${i + 1}`,
+            }));
+
+          for (const gene of genes) {
+            results.push({
+              ...gene,
+              ...ct,
+              ...as_,
+              row_number: row.rowNumber,
+            });
+          }
+        }
+
+        results.sort((a, b) => a.ct_name.localeCompare(b.ct_name));
+
+        return results;
+      }
+
+      async function runCode() {
+        const sheetCsvUrl = document.getElementById("sheetUrl").value;
+        const sheetCsv = normalizeCsvUrl(sheetCsvUrl);
+        const sheetData = await getSheet(sheetCsv);
+        const csvData = reformatSheet(sheetData);
+
+        table = new Tabulator("#table", {
+          data: csvData,
+          autoColumns: true,
+        });
+      }
+
+      let table;
+      function downloadTable() {
+        if (table) {
+          table.download("csv", "data.csv");
+        }
+      }
+    </script>
+  </head>
+
+  <body>
+    <h1>HRA ASCT+B CSV Re-Exporter</h1>
+    <h2>Enter Google Sheet / CSV URL</h2>
+    <input
+      id="sheetUrl"
+      type="text"
+      value="https://docs.google.com/spreadsheets/d/19B_iDwpVTzLl6JLUl7g943p8b14YxYRwOshm-PLbIwk/edit#gid=949267305"
+    />
+    <button onclick="runCode()">Submit</button><br />
+    <p>
+      <button onclick="downloadTable()">Download Table as CSV</button>
+    </p>
+    <div id="table" style="width: calc(100% - 10px); height: 600px"></div>
+  </body>
+</html>
