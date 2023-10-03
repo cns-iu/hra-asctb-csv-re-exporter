@@ -21,8 +21,8 @@
 
       function reformatSheet(sheetData) {
         const results = [];
-        const organ_name = sheetData.title.split(' for ').slice(-1)[0];
-        const table_version = sheetData.version || '';
+        const organ_name = sheetData.metadata.title.split(' for ').slice(-1)[0];
+        const table_version = sheetData.metadata.version || '';
         for (const row of sheetData.data) {
           const asLength = row.anatomical_structures.length;
           const terminalAs = row.anatomical_structures[asLength - 1];
