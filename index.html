@@ -30,7 +30,7 @@
             as_name: terminalAs?.name,
             as_label: terminalAs?.rdfs_label,
             as_id: terminalAs?.id,
-            as_column: asLength && `AS/${asLength}`,
+            as_column: asLength && `AS/${asLength}` || '',
           };
 
           const ctLength = row.cell_types.length;
@@ -39,7 +39,7 @@
             ct_name: terminalCt?.name,
             ct_label: terminalCt?.rdfs_label,
             ct_id: terminalCt?.id,
-            ct_column: ctLength && `CT/${ctLength}`,
+            ct_column: ctLength && `CT/${ctLength}` || '',
           };
 
           const ftuLength = row.ftu_types.length;
@@ -48,7 +48,7 @@
             ftu_name: terminalFtu?.name,
             ftu_label: terminalFtu?.rdfs_label,
             ftu_id: terminalFtu?.id,
-            ftu_column: ftuLength && `FTU/${ftuLength}`,
+            ftu_column: ftuLength && `FTU/${ftuLength}` || '',
           };
 
           const genes = row.biomarkers_gene
