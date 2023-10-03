@@ -12,21 +12,6 @@
     ></script>
 
     <script>
-      function normalizeCsvUrl(url) {
-        if (
-          url.startsWith("https://docs.google.com/spreadsheets/d/") &&
-          url.indexOf("export?format=csv") === -1
-        ) {
-          const splitUrl = url.split("/");
-          if (splitUrl.length === 7) {
-            const sheetId = splitUrl[5];
-            const gid = splitUrl[6].split("=")[1];
-            return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
-          }
-        }
-        return url;
-      }
-
       function getSheet(csvUrl) {
         const url = `https://mmpyikxkcp.us-east-2.awsapprunner.com/v2/csv?csvUrl=${encodeURIComponent(
           csvUrl
@@ -36,23 +21,34 @@
 
       function reformatSheet(sheetData) {
         const results = [];
+        const organ_name = sheetData.title.split(' for ').slice(-1)[0];
+        const table_version = sheetData.version || '';
         for (const row of sheetData.data) {
           const asLength = row.anatomical_structures.length;
           const terminalAs = row.anatomical_structures[asLength - 1];
           const as_ = {
-            as_name: terminalAs.name,
-            as_label: terminalAs.rdfs_label,
-            as_id: terminalAs.id,
-            as_column: `AS/${asLength}`,
+            as_name: terminalAs?.name,
+            as_label: terminalAs?.rdfs_label,
+            as_id: terminalAs?.id,
+            as_column: asLength && `AS/${asLength}`,
           };
 
           const ctLength = row.cell_types.length;
           const terminalCt = row.cell_types[ctLength - 1];
           const ct = {
-            ct_name: terminalCt.name,
-            ct_label: terminalCt.rdfs_label,
-            ct_id: terminalCt.id,
-            ct_column: `CT/${ctLength}`,
+            ct_name: terminalCt?.name,
+            ct_label: terminalCt?.rdfs_label,
+            ct_id: terminalCt?.id,
+            ct_column: ctLength && `CT/${ctLength}`,
+          };
+
+          const ftuLength = row.ftu_types.length;
+          const terminalFtu = row.ftu_types[ftuLength - 1];
+          const ftu = {
+            ftu_name: terminalFtu?.name,
+            ftu_label: terminalFtu?.rdfs_label,
+            ftu_id: terminalFtu?.id,
+            ftu_column: ftuLength && `FTU/${ftuLength}`,
           };
 
           const genes = row.biomarkers_gene
@@ -68,8 +64,11 @@
             results.push({
               ...gene,
               ...ct,
+              ...ftu,
               ...as_,
               row_number: row.rowNumber,
+              organ_name,
+              table_version
             });
           }
         }
@@ -81,8 +80,7 @@
 
       async function runCode() {
         const sheetCsvUrl = document.getElementById("sheetUrl").value;
-        const sheetCsv = normalizeCsvUrl(sheetCsvUrl);
-        const sheetData = await getSheet(sheetCsv);
+        const sheetData = await getSheet(sheetCsvUrl);
         const csvData = reformatSheet(sheetData);
 
         table = new Tabulator("#table", {
