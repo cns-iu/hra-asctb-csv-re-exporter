@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>HRA ASCT+B CSV Validation Report</title>
+    <link href="https://cdn.jsdelivr.net/npm/tabulator-tables/dist/css/tabulator.min.css" rel="stylesheet" />
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/npm/tabulator-tables/dist/js/tabulator.min.js"
+    ></script>
+
+    <script>
+      function getValidationReport(csvUrl) {
+        const url = `https://mmpyikxkcp.us-east-2.awsapprunner.com/v2/csv?csvUrl=${encodeURIComponent(
+          csvUrl
+        )}&cache=false&output=validate`;
+        return fetch(url).then((r) => r.text());
+      }
+
+      async function runCode() {
+        const sheetCsvUrl = document.getElementById('sheetUrl').value;
+        const validationText = await getValidationReport(sheetCsvUrl);
+        const element = document.getElementById('validationReport');
+        element.innerHTML = validationText;
+      }
+
+      let table;
+      function downloadTable() {
+        if (table) {
+          table.download('csv', 'data.csv');
+        }
+      }
+    </script>
+  </head>
+
+  <body>
+    <h1>HRA ASCT+B CSV Validation Report</h1>
+    <h2>Enter Google Sheet / CSV URL</h2>
+    <input
+      id="sheetUrl"
+      type="text"
+      value="https://docs.google.com/spreadsheets/d/19B_iDwpVTzLl6JLUl7g943p8b14YxYRwOshm-PLbIwk/edit#gid=949267305"
+    />
+    <button onclick="runCode()">Submit</button><br />
+    <pre id="validationReport"></pre>
+  </body>
+</html>
